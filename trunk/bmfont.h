@@ -31,6 +31,7 @@ For more information, please refer to <http://unlicense.org/>
 #define __BMFONT__
 
 #include <vector>
+#include <map>
 
 #ifndef MAKE_RGBA
  
@@ -62,6 +63,7 @@ using namespace std;
 
 class KearningInfo
 {
+
 public:
 	short First;
 	short Second;
@@ -73,6 +75,7 @@ public:
 
 class CharDescriptor
 {
+
 public:
 	short x, y;
 	short Width;
@@ -89,6 +92,26 @@ public:
 
 class BMFont
 {
+
+ public:
+	
+	bool LoadFont(char *);
+	void SetColor(int r, int g, int b, int a) {fcolor = MAKE_RGBA(r,g,b,a);}
+	void SetBlend(int b) {fblend = b;}
+	void SetScale(float scale){fscale = scale;}
+	float GetHeight(){return LineHeight * fscale;}
+	void Print(float, float, const char *,...);
+	void PrintCenter( float, const char *);
+	BMFont() 
+	  {
+		  SetColor(255,255,255,255);
+   	      KernCount = 0;
+		  ftexid = -1;
+		  fblend = 0;
+          fscale = 1.0;
+	  };
+	 ~BMFont ();
+
 private:
     short LineHeight;
 	short Base;
@@ -97,27 +120,17 @@ private:
 	short Pages;
 	short Outline;
 	short KernCount;
-	std::vector<CharDescriptor> Chars;
+	std::map<int,CharDescriptor> Chars;
 	std::vector<KearningInfo> Kearn;
 	int fcolor;
 	GLuint ftexid;
-	int Get_Kerning_Pair(int, int);
-	float Get_String_Width(const char *, float);
+	float fscale;
+	int fblend;
 
-public:
-	
 	bool ParseFont(char *);
-	bool LoadFont(char *);
-	void SetColor(int r, int g, int b, int a){fcolor= MAKE_RGBA(r,g,b,a);}
-	BMFont() 
-	  {
-		  SetColor(255,255,255,255);
-   	      KernCount=0;
-		  ftexid=-1;
-	  };
-	void glPrint(float, float, double, const char *,...);
-	void glPrintCenter( float, double, const char *);
-	 ~BMFont ();
+	int GetKerningPair(int, int);
+	float GetStringWidth(const char *);
+
 };
 
 

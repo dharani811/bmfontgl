@@ -49,6 +49,7 @@ void DeleteGLContext();
 void GlSwap();
 void SnapShot();
 GLvoid ReSizeGLScene(GLsizei width, GLsizei height);
+void SetBlendMode(int mode);
 
 #ifdef __cplusplus
 } 
