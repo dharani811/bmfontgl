@@ -228,6 +228,20 @@ void use_texture(GLuint *texture, GLboolean linear, GLboolean mipmapping)
    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (GLfloat) filter);
 }
 
+void SetBlendMode(int mode)
+{
+	if (mode) {
+		         glEnable(GL_ALPHA_TEST);
+	             glDisable(GL_BLEND);
+	             glAlphaFunc(GL_GREATER, 0.5f);
+	          }
+	else {
+		   glDisable(GL_ALPHA_TEST);
+		   glEnable(GL_BLEND);
+           glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	     }
+}
+
 
 void SnapShot()
 {

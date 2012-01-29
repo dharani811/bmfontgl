@@ -51,7 +51,6 @@ aaedev@gmail.com 2012
 #include <fstream>
 #include <string>
 #include <sstream> 
-#include <vector>
 #include "log.h"
 #include "bmfont.h"
 #include "gl_basics.h"
@@ -101,8 +100,6 @@ bool BMFont::ParseFont(char *fontfile )
 	std::string Read, Key, Value;
 	std::size_t i;
 
-	bool newalloc=0;
-		
 	KearningInfo K;
 	CharDescriptor C;
 
@@ -144,7 +141,7 @@ bool BMFont::ParseFont(char *fontfile )
 		
 		else if( Read == "char" )
 		{
-			//this is data for a specific char
+			//This is data for each specific character.
 			int CharID = 0;
 	
 			while( !LineStream.eof() )
@@ -155,35 +152,30 @@ bool BMFont::ParseFont(char *fontfile )
 				Key = Read.substr( 0, i );
 				Value = Read.substr( i + 1 );
 
-				//assign the correct value
+				//Assign the correct value
 				Converter << Value;
 				if( Key == "id" )
 				{Converter >> CharID;}
 				else if( Key == "x" )
 				{	Converter >> C.x;}      
 				else if( Key == "y" )
-				{	Converter >> C.y;   }      
+				{	Converter >> C.y;}      
 				else if( Key == "width" )
-				{	Converter >> C.Width;  }        
+				{	Converter >> C.Width;}        
 				else if( Key == "height" )
-				{	Converter >> C.Height; }         
+				{	Converter >> C.Height;}         
 				else if( Key == "xoffset" )
-				{	Converter >> C.XOffset;  }         
+				{	Converter >> C.XOffset;}         
 				else if( Key == "yoffset" )
-				{	Converter >> C.YOffset; }        
+				{	Converter >> C.YOffset;}        
 				else if( Key == "xadvance" )
-				{	Converter >> C.XAdvance; }         
+				{	Converter >> C.XAdvance;}         
 				else if( Key == "page" )
-				{	Converter >> C.Page;   }           
+				{	Converter >> C.Page;}           
 			}
 			
-         	//wrlog("Allocating character here");
-			if (newalloc==0)
-			{
-			Chars.insert(Chars.begin(),CharID,C);
-			newalloc=true;
-			}
-			Chars.insert(Chars.begin()+ CharID,C);
+         	Chars.insert(std::map<int,CharDescriptor>::value_type( CharID,C ));
+			
 		}
 		else if( Read == "kernings" )
 		{
@@ -222,12 +214,10 @@ bool BMFont::ParseFont(char *fontfile )
 				
 				else if( Key == "amount" )
 				{Converter >> K.Amount;}
-    			
-			}
+ 			}
 			//wrlog("Done with this pass");
 			Kearn.push_back(K);
 		}
-		
 	}
 
 	Stream.close();
@@ -235,7 +225,7 @@ bool BMFont::ParseFont(char *fontfile )
 }
 
 
-int BMFont::Get_Kerning_Pair(int first, int second)
+int BMFont::GetKerningPair(int first, int second)
 {
 		
 	 if (KernCount ) //Only process if there actually is kerning information
@@ -256,7 +246,7 @@ return 0;
 }
 
 
-float BMFont::Get_String_Width(const char *string, float scale)
+float BMFont::GetStringWidth(const char *string)
 {
   float total=0;
   CharDescriptor  *f;
@@ -267,17 +257,16 @@ float BMFont::Get_String_Width(const char *string, float scale)
       total+=f->XAdvance;
    }
 
-return total*scale;
+  return total * fscale;
 }
 
 
 bool  BMFont::LoadFont(char *fontfile)
 {
-		
 	std::ifstream Stream(fontfile);
 	if ( !Stream.is_open() )          
 	{   
-		wrlog("Cannot find font file %s",fontfile);
+		wrlog("Cannot Find Font File %s",fontfile);
 		return false;         
 	}
 	Stream.close();
@@ -292,9 +281,9 @@ bool  BMFont::LoadFont(char *fontfile)
 		return false;         
 	}
 	
-	wrlog("Starting to parse font");
+	wrlog("Starting to Parse Font %s",fontfile);
 	ParseFont(fontfile);
-	wrlog("Finished Parsing Font");
+	wrlog("Finished Parsing Font %s",fontfile);
 	KernCount = (int) Kearn.size();
 
 	return true;
@@ -313,7 +302,7 @@ void Render_String(int len)
    glEnableClientState(GL_COLOR_ARRAY);
    glColorPointer (4, GL_UNSIGNED_BYTE , sizeof(vlist) , &texlst[0].r);
 
-   glDrawArrays(GL_QUADS, 0, len*4);// 4 Coordinates for a Quad. Could use DrawElements here instead! GL_TRIANGLE_STRIP 
+   glDrawArrays(GL_QUADS, 0, len*4);// 4 Coordinates for a Quad. Could use DrawElements here instead GL 3.X+ GL_TRIANGLE_STRIP? 
  
    //Finished Drawing, disable client states.
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -322,7 +311,7 @@ void Render_String(int len)
 }
 
 
-void BMFont::glPrint(float x, float y, double scale, const char *fmt, ...)
+void BMFont::Print(float x, float y, const char *fmt, ...)
 {
 	
 	float CurX = (float) x;
@@ -331,7 +320,7 @@ void BMFont::glPrint(float x, float y, double scale, const char *fmt, ...)
 	float DstY = 0.0;
 	int Flen;
 	
-    float adv = (float) 1.0/Width;                  // Font texture atlas spacing. 
+    float adv = (float) 1.0/Width;                      // Font texture atlas spacing. 
 	char	text[512] = "";	                            // Holds Our String
 	CharDescriptor  *f;									// Pointer to font.
 	                                    
@@ -344,12 +333,12 @@ void BMFont::glPrint(float x, float y, double scale, const char *fmt, ...)
 	vsprintf(text, fmt, ap);						    // And Converts Symbols To Actual Numbers
 	va_end(ap);		
 
-	//glRotatef(90,x,y,1.0);
-	//This doesn't belong here.
+	//Select and enable the font texture. (With mipmapping.)
   	use_texture(&ftexid, 0,1);
-    
-	//Set Text Color, all one color for now. Gradient and shading tba.
-	unsigned char *color = (unsigned char*)&fcolor;//fontcolor;
+    //Set type of blending to use with this font.
+	SetBlendMode(fblend);
+   	//Set Text Color, all one color for now. 
+	unsigned char *color = (unsigned char*)&fcolor;
 	
 	y= y + LineHeight;
     Flen = strlen(text);
@@ -367,8 +356,8 @@ void BMFont::glPrint(float x, float y, double scale, const char *fmt, ...)
          //0,1 Texture Coord
 		 texlst[i*4].texx = adv*f->x;
 		 texlst[i*4].texy = (float) 1.0 -(adv * (f->y + f->Height) );
-         texlst[i*4].x = (float) scale * CurX;
-		 texlst[i*4].y = (float) scale * DstY;
+         texlst[i*4].x = (float) fscale * CurX;
+		 texlst[i*4].y = (float) fscale * DstY;
 		 texlst[i*4].r = color[0];
 		 texlst[i*4].g = color[1];
 		 texlst[i*4].b = color[2];
@@ -377,8 +366,8 @@ void BMFont::glPrint(float x, float y, double scale, const char *fmt, ...)
 		 //1,1 Texture Coord
 		 texlst[(i*4)+1].texx = adv*(f->x+f->Width);
 		 texlst[(i*4)+1].texy = (float) 1.0 -(adv * (f->y + f->Height) );
-         texlst[(i*4)+1].x = (float) scale * DstX;
-		 texlst[(i*4)+1].y = (float) scale * DstY;
+         texlst[(i*4)+1].x = (float) fscale * DstX;
+		 texlst[(i*4)+1].y = (float) fscale * DstY;
 		 texlst[(i*4)+1].r = color[0];
 		 texlst[(i*4)+1].g = color[1];
 		 texlst[(i*4)+1].b = color[2];
@@ -387,8 +376,8 @@ void BMFont::glPrint(float x, float y, double scale, const char *fmt, ...)
 		 //1,0 Texture Coord
 		 texlst[(i*4)+2].texx = adv*(f->x+f->Width);
 		 texlst[(i*4)+2].texy = (float) 1.0 -(adv*f->y);
-         texlst[(i*4)+2].x = (float) scale * DstX;
-		 texlst[(i*4)+2].y = (float) scale * CurY;
+         texlst[(i*4)+2].x = (float) fscale * DstX;
+		 texlst[(i*4)+2].y = (float) fscale * CurY;
 		 texlst[(i*4)+2].r = color[0];
 		 texlst[(i*4)+2].g = color[1];
 		 texlst[(i*4)+2].b = color[2];
@@ -397,8 +386,8 @@ void BMFont::glPrint(float x, float y, double scale, const char *fmt, ...)
 		 //0,0 Texture Coord
 		 texlst[(i*4)+3].texx = adv*f->x;
 		 texlst[(i*4)+3].texy = (float) 1.0 -(adv*f->y);
-         texlst[(i*4)+3].x = (float) scale * CurX;
-		 texlst[(i*4)+3].y = (float) scale * CurY;
+         texlst[(i*4)+3].x = (float) fscale * CurX;
+		 texlst[(i*4)+3].y = (float) fscale * CurY;
 		 texlst[(i*4)+3].r = color[0];
 		 texlst[(i*4)+3].g = color[1];
 		 texlst[(i*4)+3].b = color[2];
@@ -408,17 +397,16 @@ void BMFont::glPrint(float x, float y, double scale, const char *fmt, ...)
 		 //if the check character is 1 less then the end of the string.
 		 if (Flen > 1 && i < Flen)
 		 { 
-			 x += Get_Kerning_Pair(text[i],text[i+1]);
+			 x += GetKerningPair(text[i],text[i+1]);
 		 }
 		  
 		 x +=  f->XAdvance;
-
-  }
- 	Render_String(strlen(text));
+    }
+   Render_String(strlen(text));
 }
 
 
-void BMFont::glPrintCenter( float y, double scale, const char *string)
+void BMFont::PrintCenter( float y, const char *string)
 {
 	int x=0;
 	CharDescriptor  *f;		 
@@ -433,12 +421,12 @@ void BMFont::glPrintCenter( float y, double scale, const char *string)
 
 			if (len > 1 && i < len)
 			 { 
-			   x += Get_Kerning_Pair(string[i],string[i+1]);
+			   x += GetKerningPair(string[i],string[i+1]);
 			 }
 			 x +=  f->XAdvance;
 		}
 
-	glPrint( (float)(MyWindow.right/2) - (x/2) , y, scale, string);
+	Print( (float)(MyWindow.right/2) - (x/2) , y, string);
 }
 
 
@@ -447,5 +435,4 @@ BMFont::~BMFont()
 	Chars.clear();
 	Kearn.clear();
 	FreeTexture(ftexid);
-
 }

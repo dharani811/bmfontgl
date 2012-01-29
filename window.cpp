@@ -95,7 +95,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
   GetClientRect(hWnd, &MyWindow);
 
   ViewOrtho(WinWidth,WinHeight);
-  BMFont Handel;
+  BMFont Snap;
   BMFont Times;
   BMFont Lucida;
 
@@ -106,7 +106,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
   }
   wrlog("Font Loaded Sucessfully");
   
-  if (!Handel.LoadFont("handel.fnt"))
+  if (!Snap.LoadFont("snap.fnt"))
   {
    MessageBox(NULL, "Error, font file not found, exiting", "File Not Found",MB_ICONERROR | MB_OK);
    Quit = TRUE;
@@ -139,29 +139,32 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
   // ********** OpenGL drawing code, very simple, just to show of the font. **********
 
-      glClearColor( 0.7f, 0.7f, 0.7f, 1.0f );
+      glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
       glClear( GL_COLOR_BUFFER_BIT );
       
       // setup texture mapping
       glEnable( GL_TEXTURE_2D );
-      glEnable(GL_BLEND);
-      glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      
+
+	  
 
 	  glLoadIdentity();	
 	
 	  Times.SetColor(250,251,252,255);
-	  Times.glPrintCenter(280,1.0,"This is a different font, centered.");
+	  Times.PrintCenter(280,"This is a different font, centered.");
 	  
 	  Lucida.SetColor(250,250,55,254);
-	  Lucida.glPrintCenter(240,1.0,"This is another font, centered.");
+	  Lucida.PrintCenter(240,"This is another font, centered.");
 	  
-	  Handel.SetColor(155,155,255,255);
-	  Handel.glPrint(2, 30*4, 1.0, "This is standard printing $%&!.");
-      Handel.glPrint(2, 30*1, 1.4, "Scaling makes it Bigger!");
-	  Handel.glPrint(2, 30/2, .7, "Or Smaller!");
-	
-	  Handel.SetColor(255,155,155,255);
-	  Handel.glPrintCenter(320, 1.0, "This is centered printing with kerning: To Ti");
+	  Snap.SetColor(255,255,255,255);
+	  Snap.Print(2, Snap.GetHeight()*4, "This is standard printing.");
+	  Snap.SetScale(1.35f);
+      Snap.Print(2, Snap.GetHeight()/2, "Scaling makes it Big!");
+	  Snap.SetScale(0.7f);
+	  Snap.Print(2, Snap.GetHeight()/2, "Or it can make it smaller!");
+	  Snap.SetScale(1.0f);
+	  Snap.SetColor(255,255,255,255);
+	  Snap.PrintCenter(320, "Centered printing: To Ti");
 	
 	  GlSwap();
      }
